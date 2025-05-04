@@ -3,6 +3,175 @@ import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
+import styled from 'styled-components';
+
+const CoverageContainer = styled.div`
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #1F2937;
+  min-height: 100vh;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+const PageTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+`;
+
+const BackLink = styled(Link)`
+  color: #1D4ED8;
+  text-decoration: none;
+  font-size: 16px;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const SearchInput = styled.input`
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const Thead = styled.thead`
+  background: #F9FAFB;
+`;
+
+const Th = styled.th`
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+  color: #6B7280;
+  border-bottom: 1px solid #E5E7EB;
+`;
+
+const Td = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #E5E7EB;
+  color: #1F2937;
+`;
+
+const Input = styled.input`
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const Select = styled.select`
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+`;
+
+const ActionButton = styled.button`
+  padding: 10px 20px;
+  background: #1D4ED8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background: #1E40AF;
+  }
+`;
+
+const IconButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${props => (props.danger ? '#DC2626' : '#1D4ED8')};
+  transition: color 0.2s ease;
+  &:hover {
+    color: ${props => (props.danger ? '#B91C1C' : '#1E40AF')};
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const NoCoveragesText = styled.p`
+  text-align: center;
+  font-size: 16px;
+  color: #6B7280;
+`;
+
+const FormContainer = styled.div`
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
 
 function CoverageScreen() {
   const { productId } = useParams();
@@ -121,111 +290,98 @@ function CoverageScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-white p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Coverages for {productName}</h1>
-        <Link to="/" className="text-accent-orange hover:underline text-lg">Back</Link>
-      </div>
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search Coverages"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
-        />
-      </div>
+    <CoverageContainer>
+      <Header>
+        <PageTitle>Coverages for {productName}</PageTitle>
+        <BackLink to="/">Back</BackLink>
+      </Header>
+      <SearchInput
+        type="text"
+        placeholder="Search Coverages"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+      />
       {filteredCoverages.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto bg-code-bg rounded-lg">
-            <thead>
-              <tr className="bg-gray-700">
-                <th className="p-3 text-left text-sm font-medium">Name</th>
-                <th className="p-3 text-left text-sm font-medium">Description</th>
-                <th className="p-3 text-left text-sm font-medium">Type</th>
-                <th className="p-3 text-left text-sm font-medium">Form Number</th>
-                <th className="p-3 text-left text-sm font-medium">IT Code</th>
-                <th className="p-3 text-left text-sm font-medium">Stat Code</th>
-                <th className="p-3 text-left text-sm font-medium">Actions</th>
+        <Table>
+          <Thead>
+            <tr>
+              <Th>Name</Th>
+              <Th>Type</Th>
+              <Th>Form Number</Th>
+              <Th>IT Code</Th>
+              <Th>Stat Code</Th>
+              <Th>Actions</Th>
+            </tr>
+          </Thead>
+          <tbody>
+            {filteredCoverages.map(coverage => (
+              <tr key={coverage.id}>
+                <Td>{coverage.name}</Td>
+                <Td>{coverage.type}</Td>
+                <Td>{coverage.formNumber}</Td>
+                <Td>{coverage.itCode || '-'}</Td>
+                <Td>{coverage.statCode || '-'}</Td>
+                <Td>
+                  <ActionsContainer>
+                    <IconButton onClick={() => handleEditCoverage(coverage)} title="Edit coverage">
+                      <PencilIcon />
+                    </IconButton>
+                    <IconButton danger onClick={() => handleDeleteCoverage(coverage.id)} title="Delete coverage">
+                      <TrashIcon />
+                    </IconButton>
+                  </ActionsContainer>
+                </Td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredCoverages.map(coverage => (
-                <tr key={coverage.id} className="border-b border-gray-600 hover:bg-gray-800">
-                  <td className="p-3">{coverage.name}</td>
-                  <td className="p-3">{coverage.description}</td>
-                  <td className="p-3">{coverage.type}</td>
-                  <td className="p-3">{coverage.formNumber}</td>
-                  <td className="p-3">{coverage.itCode || '-'}</td>
-                  <td className="p-3">{coverage.statCode || '-'}</td>
-                  <td className="p-3 flex space-x-2">
-                    <button onClick={() => handleEditCoverage(coverage)} className="text-blue-500 hover:text-blue-700" title="Edit coverage">
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button onClick={() => handleDeleteCoverage(coverage.id)} className="text-red-500 hover:text-red-700" title="Delete coverage">
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </Table>
       ) : (
-        <p className="text-center text-lg">No Coverages Found</p>
+        <NoCoveragesText>No Coverages Found</NoCoveragesText>
       )}
-      <div className="mt-8 flex flex-wrap gap-4">
-        <input
+      <FormContainer>
+        <Input
           type="text"
           placeholder="Coverage Name"
           value={name}
           onChange={e => setName(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <Input
           type="text"
           placeholder="Short Description"
           value={description}
           onChange={e => setDescription(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <select
+        <Select
           value={type}
           onChange={e => setType(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         >
           <option value="Base coverage">Base coverage</option>
           <option value="Endorsement">Endorsement</option>
-        </select>
-        <input
+        </Select>
+        <Input
           type="text"
           placeholder="Form Number"
           value={formNumber}
           onChange={e => setFormNumber(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <Input
           type="text"
           placeholder="IT Code (Optional)"
           value={itCode}
           onChange={e => setItCode(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <Input
           type="text"
           placeholder="Stat Code (Optional)"
           value={statCode}
           onChange={e => setStatCode(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <button
-          onClick={editingCoverageId ? handleUpdateCoverage : handleAddCoverage}
-          className="bg-accent-orange text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
-        >
+        <ActionButton onClick={editingCoverageId ? handleUpdateCoverage : handleAddCoverage}>
           {editingCoverageId ? 'Update Coverage' : 'Add Coverage'}
-        </button>
-      </div>
-    </div>
+        </ActionButton>
+      </FormContainer>
+    </CoverageContainer>
   );
 }
+
 export default CoverageScreen;

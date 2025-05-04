@@ -3,6 +3,184 @@ import { db } from '../firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
+import styled from 'styled-components';
+
+const Container = styled.div`
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #1F2937;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+`;
+
+const Header = styled.header`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+`;
+
+const Title = styled.h1`
+  font-size: 30px;
+  font-weight: 700;
+  color: #1F2937;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  margin-bottom: 24px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const Subtitle = styled.h2`
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 16px;
+`;
+
+const TableContainer = styled.div`
+  overflow-x: auto;
+`;
+
+const Table = styled.table`
+  width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const TableHead = styled.thead`
+  background: #F9FAFB;
+`;
+
+const TableRow = styled.tr`
+  border-bottom: 1px solid #E5E7EB;
+  &:hover {
+    background: #F9FAFB;
+  }
+`;
+
+const TableHeader = styled.th`
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+`;
+
+const TableCell = styled.td`
+  padding: 12px;
+  font-size: 14px;
+  color: #1F2937;
+`;
+
+const NavigationLinks = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const NavLink = styled(Link)`
+  color: #1D4ED8;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const NavText = styled.span`
+  color: ${props => (props.disabled ? '#6B7280' : '#1F2937')};
+  cursor: ${props => (props.disabled ? 'not-allowed' : 'default')};
+`;
+
+const Separator = styled.span`
+  color: #1F2937;
+`;
+
+const ActionButton = styled.button`
+  color: ${props => (props.danger ? '#DC2626' : '#1D4ED8')};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  &:hover {
+    color: ${props => (props.danger ? '#B91C1C' : '#1E40AF')};
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const NoProductsText = styled.p`
+  text-align: center;
+  font-size: 18px;
+  color: #6B7280;
+`;
+
+const FormContainer = styled.div`
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+`;
+
+const FormInput = styled.input`
+  flex: 1;
+  min-width: 200px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const SubmitButton = styled.button`
+  padding: 12px 24px;
+  background: #1D4ED8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background: #1E40AF;
+  }
+`;
 
 function ProductHub() {
   const [products, setProducts] = useState([]);
@@ -90,90 +268,85 @@ function ProductHub() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-white p-6">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Product Repository</h1>
-      </header>
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search Products"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
-        />
-      </div>
-      <h2 className="text-2xl font-semibold mb-4">Products</h2>
+    <Container>
+      <Header>
+        <Title>Product Repository</Title>
+      </Header>
+      <SearchInput
+        type="text"
+        placeholder="Search Products"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+      />
+      <Subtitle>Products</Subtitle>
       {filteredProducts.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto bg-code-bg rounded-lg">
-            <thead>
-              <tr className="bg-gray-700">
-                <th className="p-3 text-left text-sm font-medium">Name</th>
-                <th className="p-3 text-left text-sm font-medium">Description</th>
-                <th className="p-3 text-left text-sm font-medium">Navigation</th>
-                <th className="p-3 text-left text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeader>Name</TableHeader>
+                <TableHeader>Description</TableHeader>
+                <TableHeader>Navigation</TableHeader>
+                <TableHeader>Actions</TableHeader>
+              </TableRow>
+            </TableHead>
             <tbody>
               {filteredProducts.map(product => (
-                <tr key={product.id} className="border-b border-gray-600 hover:bg-gray-800">
-                  <td className="p-3">{product.name}</td>
-                  <td className="p-3">{product.description}</td>
-                  <td className="p-3">
-                    <div className="flex items-center space-x-2">
-                      <Link to={`/coverage/${product.id}`} className="text-white hover:underline">Coverages</Link>
-                      <span className="text-white">|</span>
-                      <Link to={`/pricing/${product.id}`} className="text-white hover:underline">Pricing</Link>
-                      <span className="text-white">|</span>
-                      <Link to="/forms" className="text-white hover:underline">Forms</Link>
-                      <span className="text-white">|</span>
-                      <span className="text-gray-500 cursor-not-allowed">Rules</span>
-                      <span className="text-white">|</span>
-                      <Link to={`/states/${product.id}`} className="text-white hover:underline">States</Link>
-                      <span className="text-white">|</span>
-                      <span className="text-gray-500 cursor-not-allowed">More</span>
-                    </div>
-                  </td>
-                  <td className="p-3 flex space-x-2">
-                    <button onClick={() => handleEditProduct(product)} className="text-blue-500 hover:text-blue-700" title="Edit product">
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-700" title="Delete product">
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>{product.description}</TableCell>
+                  <TableCell>
+                    <NavigationLinks>
+                      <NavLink to={`/coverage/${product.id}`}>Coverages</NavLink>
+                      <Separator>|</Separator>
+                      <NavLink to={`/pricing/${product.id}`}>Pricing</NavLink>
+                      <Separator>|</Separator>
+                      <NavLink to="/forms">Forms</NavLink>
+                      <Separator>|</Separator>
+                      <NavText disabled>Rules</NavText>
+                      <Separator>|</Separator>
+                      <NavLink to={`/states/${product.id}`}>States</NavLink>
+                      <Separator>|</Separator>
+                      <NavText disabled>More</NavText>
+                    </NavigationLinks>
+                  </TableCell>
+                  <TableCell>
+                    <ActionsContainer>
+                      <ActionButton onClick={() => handleEditProduct(product)} title="Edit product">
+                        <PencilIcon />
+                      </ActionButton>
+                      <ActionButton danger onClick={() => handleDeleteProduct(product.id)} title="Delete product">
+                        <TrashIcon />
+                      </ActionButton>
+                    </ActionsContainer>
+                  </TableCell>
+                </TableRow>
               ))}
             </tbody>
-          </table>
-        </div>
+          </Table>
+        </TableContainer>
       ) : (
-        <p className="text-center text-lg">No Products Found</p>
+        <NoProductsText>No Products Found</NoProductsText>
       )}
-      <div className="mt-8 flex flex-wrap gap-4">
-        <input
+      <FormContainer>
+        <FormInput
           type="text"
           placeholder="Product Name"
           value={name}
           onChange={e => setName(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <FormInput
           type="text"
           placeholder="Short Description"
           value={description}
           onChange={e => setDescription(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <button
-          onClick={editingProductId ? handleUpdateProduct : handleAddProduct}
-          className="bg-white text-black px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
-        >
+        <SubmitButton onClick={editingProductId ? handleUpdateProduct : handleAddProduct}>
           {editingProductId ? 'Update Product' : 'Add Product'}
-        </button>
-      </div>
-    </div>
+        </SubmitButton>
+      </FormContainer>
+    </Container>
   );
 }
+
 export default ProductHub;

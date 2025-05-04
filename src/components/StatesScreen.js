@@ -4,8 +4,188 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import USAmap from 'react-usa-map';
 import { TrashIcon } from '@heroicons/react/24/solid';
+import styled from 'styled-components';
 
 const allStates = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
+
+const Container = styled.div`
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #1F2937;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+`;
+
+const Title = styled.h1`
+  font-size: 30px;
+  font-weight: 700;
+  color: #1F2937;
+`;
+
+const BackLink = styled(Link)`
+  color: #1D4ED8;
+  text-decoration: none;
+  font-size: 18px;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const MainContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+`;
+
+const MapSection = styled.div`
+  width: 100%;
+  @media (min-width: 768px) {
+    width: 50%;
+  }
+`;
+
+const StatesSection = styled.div`
+  width: 100%;
+  @media (min-width: 768px) {
+    width: 50%;
+  }
+`;
+
+const Subtitle = styled.h2`
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 16px;
+`;
+
+const ControlsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const Select = styled.select`
+  flex: 1;
+  min-width: 200px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+`;
+
+const ActionButton = styled.button`
+  padding: 8px 16px;
+  background: ${props => (props.primary ? '#1D4ED8' : props.success ? '#10B981' : '#6B7280')};
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background: ${props => (props.primary ? '#1E40AF' : props.success ? '#059669' : '#4B5563')};
+  }
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  margin-bottom: 16px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const TableContainer = styled.div`
+  max-height: 24rem;
+  overflow-y: auto;
+`;
+
+const Table = styled.table`
+  width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const TableHead = styled.thead`
+  background: #F9FAFB;
+`;
+
+const TableRow = styled.tr`
+  border-bottom: 1px solid #E5E7EB;
+  &:hover {
+    background: #F9FAFB;
+  }
+`;
+
+const TableHeader = styled.th`
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+`;
+
+const TableCell = styled.td`
+  padding: 12px;
+  font-size: 14px;
+  color: #1F2937;
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  color: #DC2626;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  &:hover {
+    color: #B91C1C;
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const NoStatesText = styled.p`
+  text-align: center;
+  font-size: 18px;
+  color: #6B7280;
+`;
 
 function StatesScreen() {
   const { productId } = useParams();
@@ -46,7 +226,7 @@ function StatesScreen() {
     const config = {};
     allStates.forEach(state => {
       config[state] = {
-        fill: selectedStates.includes(state) ? '#F28C38' : '#D3D3D3'
+        fill: selectedStates.includes(state) ? '#1D4ED8' : '#D1D5DB' // Updated to use blue for selected states
       };
     });
     return config;
@@ -88,96 +268,68 @@ function StatesScreen() {
   );
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-white p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">State Availability for {productName}</h1>
-        <Link to="/" className="text-accent-orange hover:underline text-lg">Back</Link>
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/2">
-          <h2 className="text-2xl font-semibold mb-4">US Map</h2>
+    <Container>
+      <Header>
+        <Title>State Availability for {productName}</Title>
+        <BackLink to="/">Back</BackLink>
+      </Header>
+      <MainContent>
+        <MapSection>
+          <Subtitle>US Map</Subtitle>
           <USAmap customize={configMap()} onClick={mapHandler} />
-        </div>
-        <div className="md:w-1/2">
-          <h2 className="text-2xl font-semibold mb-4">Applicable States</h2>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <select
+        </MapSection>
+        <StatesSection>
+          <Subtitle>Applicable States</Subtitle>
+          <ControlsContainer>
+            <Select
               value={newState}
               onChange={e => setNewState(e.target.value)}
-              className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
             >
               <option value="">Select State</option>
               {allStates.map(state => (
                 <option key={state} value={state}>{state}</option>
               ))}
-            </select>
-            <button
-              onClick={handleAddState}
-              className="bg-accent-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Add State
-            </button>
-            <button
-              onClick={handleSelectAll}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
-            >
-              Select All
-            </button>
-            <button
-              onClick={handleClearAll}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
-            >
-              Clear All
-            </button>
-            <button
-              onClick={handleSave}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-500 transition-colors"
-            >
-              Save
-            </button>
-          </div>
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Search States"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
-            />
-          </div>
+            </Select>
+            <ActionButton primary onClick={handleAddState}>Add State</ActionButton>
+            <ActionButton onClick={handleSelectAll}>Select All</ActionButton>
+            <ActionButton onClick={handleClearAll}>Clear All</ActionButton>
+            <ActionButton success onClick={handleSave}>Save</ActionButton>
+          </ControlsContainer>
+          <SearchInput
+            type="text"
+            placeholder="Search States"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
           {filteredStates.length > 0 ? (
-            <div className="max-h-96 overflow-y-auto">
-              <table className="w-full table-auto bg-code-bg rounded-lg">
-                <thead>
-                  <tr className="bg-gray-700">
-                    <th className="p-3 text-left text-sm font-medium">State</th>
-                    <th className="p-3 text-left text-sm font-medium">Action</th>
-                  </tr>
-                </thead>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>State</TableHeader>
+                    <TableHeader>Action</TableHeader>
+                  </TableRow>
+                </TableHead>
                 <tbody>
                   {filteredStates.map(state => (
-                    <tr key={state} className="border-b border-gray-600 hover:bg-gray-800">
-                      <td className="p-3">{state}</td>
-                      <td className="p-3">
-                        <button
-                          onClick={() => handleRemoveState(state)}
-                          className="text-red-500 hover:text-red-700"
-                          title="Remove state"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
+                    <TableRow key={state}>
+                      <TableCell>{state}</TableCell>
+                      <TableCell>
+                        <DeleteButton onClick={() => handleRemoveState(state)} title="Remove state">
+                          <TrashIcon />
+                        </DeleteButton>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </tbody>
-              </table>
-            </div>
+              </Table>
+            </TableContainer>
           ) : (
-            <p className="text-center text-lg">No States Selected</p>
+            <NoStatesText>No States Selected</NoStatesText>
           )}
-        </div>
-      </div>
-    </div>
+        </StatesSection>
+      </MainContent>
+    </Container>
   );
 }
 

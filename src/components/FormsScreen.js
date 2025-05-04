@@ -3,6 +3,191 @@ import { db } from '../firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import { useParams, Link } from 'react-router-dom';
+import styled from 'styled-components';
+
+const Container = styled.div`
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #1F2937;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+`;
+
+const Title = styled.h1`
+  font-size: 30px;
+  font-weight: 700;
+  color: #1F2937;
+`;
+
+const BackLink = styled(Link)`
+  color: #1D4ED8;
+  text-decoration: none;
+  font-size: 18px;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  margin-bottom: 24px;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const Subtitle = styled.h2`
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 16px;
+`;
+
+const TableContainer = styled.div`
+  overflow-x: auto;
+`;
+
+const Table = styled.table`
+  width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const TableHead = styled.thead`
+  background: #F9FAFB;
+`;
+
+const TableRow = styled.tr`
+  border-bottom: 1px solid #E5E7EB;
+  &:hover {
+    background: #F9FAFB;
+  }
+`;
+
+const TableHeader = styled.th`
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+`;
+
+const TableCell = styled.td`
+  padding: 12px;
+  font-size: 14px;
+  color: #1F2937;
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  color: #DC2626;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  &:hover {
+    color: #B91C1C;
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const DisabledButton = styled.button`
+  background: #E5E7EB;
+  color: #6B7280;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: not-allowed;
+`;
+
+const NoFormsText = styled.p`
+  text-align: center;
+  font-size: 18px;
+  color: #6B7280;
+`;
+
+const FormContainer = styled.div`
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+`;
+
+const FormInput = styled.input`
+  flex: 1;
+  min-width: 200px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+  &::placeholder {
+    color: #6B7280;
+  }
+`;
+
+const Select = styled.select`
+  flex: 1;
+  min-width: 200px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  outline: none;
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+`;
+
+const SubmitButton = styled.button`
+  padding: 12px 24px;
+  background: #1D4ED8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background: #1E40AF;
+  }
+`;
 
 function FormsScreen() {
   const [forms, setForms] = useState([]);
@@ -72,97 +257,87 @@ function FormsScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-white p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Forms</h1>
-        <Link to="/" className="text-accent-orange hover:underline text-lg">Back</Link>
-      </div>
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search Forms"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
-        />
-      </div>
-      <h2 className="text-2xl font-semibold mb-4">Forms</h2>
+    <Container>
+      <Header>
+        <Title>Forms</Title>
+        <BackLink to="/">Back</BackLink>
+      </Header>
+      <SearchInput
+        type="text"
+        placeholder="Search Forms"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+      />
+      <Subtitle>Forms</Subtitle>
       {filteredForms.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto bg-code-bg rounded-lg">
-            <thead>
-              <tr className="bg-gray-700">
-                <th className="p-3 text-left text-sm font-medium">Form Name</th>
-                <th className="p-3 text-left text-sm font-medium">Form Number</th>
-                <th className="p-3 text-left text-sm font-medium">Effective Date</th>
-                <th className="p-3 text-left text-sm font-medium">Type</th>
-                <th className="p-3 text-left text-sm font-medium">Category</th>
-                <th className="p-3 text-left text-sm font-medium">Applicability</th>
-                <th className="p-3 text-left text-sm font-medium">Delete</th>
-              </tr>
-            </thead>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeader>Form Name</TableHeader>
+                <TableHeader>Form Number</TableHeader>
+                <TableHeader>Effective Date</TableHeader>
+                <TableHeader>Type</TableHeader>
+                <TableHeader>Category</TableHeader>
+                <TableHeader>Applicability</TableHeader>
+                <TableHeader>Delete</TableHeader>
+              </TableRow>
+            </TableHead>
             <tbody>
               {filteredForms.map(form => (
-                <tr key={form.id} className="border-b border-gray-600 hover:bg-gray-800">
-                  <td className="p-3">{form.formName}</td>
-                  <td className="p-3">{form.formNumber}</td>
-                  <td className="p-3">{form.effectiveDate}</td>
-                  <td className="p-3">{form.type}</td>
-                  <td className="p-3">{form.category}</td>
-                  <td className="p-3">
-                    <button disabled className="bg-gray-600 text-white px-3 py-1 rounded-md cursor-not-allowed">
-                      Applicability
-                    </button>
-                  </td>
-                  <td className="p-3">
-                    <button onClick={() => handleDeleteForm(form.id)} className="text-red-500 hover:text-red-700" title="Delete form">
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
+                <TableRow key={form.id}>
+                  <TableCell>{form.formName}</TableCell>
+                  <TableCell>{form.formNumber}</TableCell>
+                  <TableCell>{form.effectiveDate}</TableCell>
+                  <TableCell>{form.type}</TableCell>
+                  <TableCell>{form.category}</TableCell>
+                  <TableCell>
+                    <DisabledButton disabled>Applicability</DisabledButton>
+                  </TableCell>
+                  <TableCell>
+                    <DeleteButton onClick={() => handleDeleteForm(form.id)} title="Delete form">
+                      <TrashIcon />
+                    </DeleteButton>
+                  </TableCell>
+                </TableRow>
               ))}
             </tbody>
-          </table>
-        </div>
+          </Table>
+        </TableContainer>
       ) : (
-        <p className="text-center text-lg">No Forms Found</p>
+        <NoFormsText>No Forms Found</NoFormsText>
       )}
-      <div className="mt-8 flex flex-wrap gap-4">
-        <input
+      <FormContainer>
+        <FormInput
           type="text"
           placeholder="Form Name"
           value={formName}
           onChange={e => setFormName(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <FormInput
           type="text"
           placeholder="Form Number"
           value={formNumber}
           onChange={e => setFormNumber(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <input
+        <FormInput
           type="text"
           placeholder="Effective Date (MM/YY)"
           value={effectiveDate}
           onChange={e => setEffectiveDate(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         />
-        <select
+        <Select
           value={type}
           onChange={e => setType(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         >
           <option value="Proprietary">Proprietary</option>
           <option value="ISO">ISO</option>
           <option value="NAICS">NAICS</option>
           <option value="Other">Other</option>
-        </select>
-        <select
+        </Select>
+        <Select
           value={category}
           onChange={e => setCategory(e.target.value)}
-          className="flex-1 min-w-[200px] p-3 bg-code-bg text-text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange"
         >
           <option value="Base Coverage Form">Base Coverage Form</option>
           <option value="Endorsement">Endorsement</option>
@@ -170,15 +345,10 @@ function FormsScreen() {
           <option value="Dec/Quote Letter">Dec/Quote Letter</option>
           <option value="Notice">Notice</option>
           <option value="Other">Other</option>
-        </select>
-        <button
-          onClick={handleAddForm}
-          className="bg-accent-orange text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
-        >
-          Add Form
-        </button>
-      </div>
-    </div>
+        </Select>
+        <SubmitButton onClick={handleAddForm}>Add Form</SubmitButton>
+      </FormContainer>
+    </Container>
   );
 }
 
