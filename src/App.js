@@ -5,6 +5,7 @@ import PricingScreen from './components/PricingScreen';
 import FormsScreen from './components/FormsScreen';
 import StatesScreen from './components/StatesScreen';
 import TableScreen from './components/TableScreen';
+import RulesScreen from './components/RulesScreen';
 import PlaceholderScreen from './components/PlaceholderScreen';
 import styled from 'styled-components';
 
@@ -26,7 +27,7 @@ function App() {
           <Route path="/forms" element={<FormsScreen />} />
           <Route path="/states/:productId" element={<StatesScreen />} />
           <Route path="/table/:productId/:stepId" element={<TableScreen />} />
-          <Route path="/rules" element={<PlaceholderScreen title="Rules" />} />
+          <Route path="/rules" element={<RulesScreen title="Rules" />} />
           <Route path="/applicability" element={<PlaceholderScreen title="Applicability" />} />
         </Routes>
       </Router>

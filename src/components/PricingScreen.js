@@ -1,108 +1,221 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
-import { TrashIcon } from '@heroicons/react/24/solid';
+import { collection, getDocs, addDoc, deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Select from 'react-select';
 import styled from 'styled-components';
 
-// Styled Components
+// Styled Components for a modern, Musk-inspired UI
 const PricingContainer = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  color: #1F2937;
   padding: 24px;
   font-family: 'Inter', sans-serif;
-  background-color: #ffffff;
-  color: #1F2937;
-  min-height: 100vh;
+`;
+
+const ContentWrapper = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 `;
 
 const Title = styled.h1`
-  font-size: 24px;
-  font-weight: 700;
-  color: #1F2937;
+  font-size: 30px;
+  font-weight: 400;
+  background: linear-gradient(45deg, rgb(0, 116, 225), rgb(96, 65, 159));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 `;
 
 const BackLink = styled(Link)`
   color: #1D4ED8;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 18px;
   &:hover {
     text-decoration: underline;
   }
 `;
 
-const FilterContainer = styled.div`
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-`;
-
-const FilterItem = styled.div`
-  flex: 1;
-`;
-
-const FilterLabel = styled.label`
-  font-size: 14px;
+const CalculationPreview = styled.div`
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  font-size: 18px;
   font-weight: 500;
   color: #1F2937;
-  margin-bottom: 5px;
-  display: block;
+  text-align: center;
 `;
 
-const TableContainer = styled.div`
-  overflow-x: auto;
+const StepLabel = styled.span`
+  font-weight: 600;
+  color: #1F2937;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  background: #ffffff;
+  background-color: #f5f5f5;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
 `;
 
-const Thead = styled.thead`
+const TableHead = styled.thead`
   background: #F9FAFB;
 `;
 
-const Th = styled.th`
+const TableRow = styled.tr`
+  border-bottom: 1px solid #E5E7EB;
+  &:hover {
+    background: #F9FAFB;
+  }
+`;
+
+const OperandRow = styled.tr`
+  background: transparent;
+  border-bottom: 1px solid #E5E7EB;
+`;
+
+const TableHeader = styled.th`
   padding: 12px;
-  text-align: left;
+  text-align: center;
+  font-size: 14px;
   font-weight: 500;
   color: #6B7280;
-  border-bottom: 1px solid #E5E7EB;
 `;
 
-const Td = styled.td`
+const TableCell = styled.td`
   padding: 12px;
-  border-bottom: 1px solid #E5E7EB;
+  font-size: 14px;
   color: #1F2937;
+  text-align: center;
 `;
 
-const Input = styled.input`
+const OperandCell = styled.td`
+  padding: 0px 50px;
+  font-size: 24px;
+  font-weight: 500;
+  text-align: center;
+  margin: 0 auto;
+  border-radius: 50%;
+`;
+
+const TableLink = styled(Link)`
+  color: #1D4ED8;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const GradientButton = styled.button`
+  padding: 6px 12px;
+  background: linear-gradient(90deg, #A100FF, #4400FF);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background: #1E40AF;
+  }
+`;
+
+const IconButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${props => (props.danger ? '#DC2626' : '#1D4ED8')};
+  transition: color 0.2s ease;
+  &:hover {
+    color: ${props => (props.danger ? '#B91C1C' : '#1E40AF')};
+  }
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+`;
+
+const Backdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  svg {
+    width: 24px;
+    height: 24px;
+    color: #6B7280;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 16px;
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #1F2937;
+  }
+`;
+
+const FormInput = styled.input`
+  width: 100%;
   padding: 12px;
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   color: #1F2937;
-  background: #ffffff;
-  border: 1px solid #E5E7EB;
+  background-color: #f5f5f5;
+  border: 1px solid #A2C0FB;
   border-radius: 8px;
   outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 10px;
   &:focus {
     border-color: #1D4ED8;
-    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+    box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.1);
   }
   &::placeholder {
     color: #6B7280;
@@ -110,6 +223,7 @@ const Input = styled.input`
 `;
 
 const SelectStyled = styled.select`
+  width: 100%;
   padding: 12px;
   font-size: 16px;
   font-family: 'Inter', sans-serif;
@@ -118,100 +232,210 @@ const SelectStyled = styled.select`
   border: 1px solid #E5E7EB;
   border-radius: 8px;
   outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 10px;
   &:focus {
     border-color: #1D4ED8;
     box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
   }
 `;
 
-const ActionButton = styled.button`
-  padding: 10px 20px;
-  background: #1D4ED8;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  &:hover {
-    background: #1E40AF;
-  }
-`;
-
-const ViewLink = styled(Link)`
-  background: #1D4ED8;
-  color: #ffffff;
-  padding: 5px 10px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background-color 0.2s ease;
-  &:hover {
-    background: #1E40AF;
-  }
-`;
-
-const DisabledButton = styled.button`
-  background: #E5E7EB;
-  color: #6B7280;
-  padding: 5px 10px;
-  border-radius: 8px;
-  border: none;
-  cursor: not-allowed;
-`;
-
-const DeleteButton = styled.button`
-  background: none;
-  border: none;
-  color: #DC2626;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  &:hover {
-    color: #B91C1C;
-  }
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const FormContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 30px;
-`;
-
-function PricingScreen() {
-  const { productId } = useParams();
-  const [productName, setProductName] = useState('');
-  const [coverages, setCoverages] = useState([]);
-  const [steps, setSteps] = useState([]);
-  const [selectedCoveragesFilter, setSelectedCoveragesFilter] = useState([]);
-  const [selectedStatesFilter, setSelectedStatesFilter] = useState([]);
-  const [newStep, setNewStep] = useState({
+// StepModal Component for adding/editing steps
+function StepModal({ onClose, onSubmit, editingStep, steps, coverages }) {
+  const defaultStep = {
     stepType: 'factor',
-    coverage: 'Base Coverage',
-    parenBefore: '',
+    coverage: '',
     stepName: '',
-    parenAfter: '',
     type: 'User Input',
     table: '',
     rounding: 'none',
     rules: '',
     states: [],
     upstreamId: '',
-    operand: ''
-  });
+    operand: '',
+    value: 0
+  };
+
+  const [stepData, setStepData] = useState(editingStep ? { ...editingStep } : { ...defaultStep });
+
+  useEffect(() => {
+    setStepData(editingStep ? { ...editingStep } : { ...defaultStep });
+  }, [editingStep]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setStepData(prev => ({ ...prev, [name]: name === 'value' ? parseFloat(value) || 0 : value }));
+  };
+
+  const handleStatesChange = (selected) => {
+    setStepData(prev => ({ ...prev, states: selected ? selected.map(s => s.value) : [] }));
+  };
+
+  const handleUpstreamChange = (selected) => {
+    setStepData(prev => ({ ...prev, upstreamId: selected ? selected.value : '' }));
+  };
+
+  const handleSubmit = () => {
+    if (stepData.stepType === 'factor') {
+      if (!stepData.stepName || !stepData.coverage) {
+        alert('Please fill in required fields');
+        return;
+      }
+    } else {
+      if (!stepData.operand) {
+        alert('Please select an operand');
+        return;
+      }
+    }
+    onSubmit(stepData);
+  };
 
   const allStates = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
   const stateOptions = allStates.map(s => ({ value: s, label: s }));
-  const coverageOptions = coverages.map(c => ({ value: c.name, label: c.name }));
 
+  const upstreamOptions = [
+    { value: '', label: 'None' },
+    ...steps.filter(s => s.id !== editingStep?.id).map(s => ({
+      value: s.id,
+      label: s.stepType === 'factor' ? s.stepName : s.operand
+    }))
+  ];
+
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      background: '#ffffff',
+      borderColor: '#E5E7EB',
+      borderRadius: '8px',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '16px',
+      color: '#1F2937',
+      ':hover': { borderColor: '#D1D5DB' },
+      ':focus': { borderColor: '#1D4ED8', boxShadow: '0 0 0 2px rgba(29, 78, 216, 0.1)' }
+    }),
+    menu: (base) => ({ ...base, background: '#ffffff', borderRadius: '8px' }),
+    multiValue: (base) => ({ ...base, background: '#E5E7EB' }),
+    multiValueLabel: (base) => ({ ...base, color: '#1F2937' }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: '#6B7280',
+      ':hover': { background: '#D1D5DB', color: '#1F2937' }
+    }),
+    option: (base, state) => ({
+      ...base,
+      background: state.isFocused ? '#F9FAFB' : '#ffffff',
+      color: '#1F2937',
+      ':hover': { background: '#F9FAFB' }
+    }),
+    placeholder: (base) => ({ ...base, color: '#6B7280' }),
+    singleValue: (base) => ({ ...base, color: '#1F2937' })
+  };
+
+  return (
+    <Backdrop onClick={onClose}>
+      <ModalBox onClick={e => e.stopPropagation()}>
+        <CloseButton onClick={onClose}><XMarkIcon /></CloseButton>
+        <h2 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '600' }}>
+          {editingStep ? 'Edit Step' : 'Add Step'}
+        </h2>
+        <FormGroup>
+          <label>Step Type</label>
+          <SelectStyled name="stepType" value={stepData.stepType} onChange={handleChange}>
+            <option value="factor">Factor</option>
+            <option value="operand">Operand</option>
+          </SelectStyled>
+        </FormGroup>
+        {stepData.stepType === 'factor' ? (
+          <>
+            <FormGroup>
+              <label>Coverage</label>
+              <SelectStyled name="coverage" value={stepData.coverage} onChange={handleChange}>
+                <option value="">Select Coverage</option>
+                <option value="Base Coverage">Base Coverage</option>
+                {coverages.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </SelectStyled>
+            </FormGroup>
+            <FormGroup>
+              <label>Step Name</label>
+              <FormInput name="stepName" value={stepData.stepName} onChange={handleChange} />
+            </FormGroup>
+            <FormGroup>
+              <label>Value</label>
+              <FormInput type="number" name="value" value={stepData.value} onChange={handleChange} placeholder="Enter factor value" />
+            </FormGroup>
+            <FormGroup>
+              <label>Type</label>
+              <SelectStyled name="type" value={stepData.type} onChange={handleChange}>
+                <option value="User Input">User Input</option>
+                <option value="Table">Table</option>
+                <option value="Other">Other</option>
+              </SelectStyled>
+            </FormGroup>
+            <FormGroup>
+              <label>Table Name (Optional)</label>
+              <FormInput name="table" value={stepData.table} onChange={handleChange} />
+            </FormGroup>
+            <FormGroup>
+              <label>Rounding</label>
+              <SelectStyled name="rounding" value={stepData.rounding} onChange={handleChange}>
+                <option value="none">None</option>
+                <option value="Whole Number">Whole Number</option>
+                <option value="1 Decimal">1 Decimal</option>
+                <option value="2 Decimals">2 Decimals</option>
+                <option value="Other">Other</option>
+              </SelectStyled>
+            </FormGroup>
+            <FormGroup>
+              <label>States</label>
+              <Select
+                isMulti
+                options={stateOptions}
+                value={stateOptions.filter(s => stepData.states.includes(s.value))}
+                onChange={handleStatesChange}
+                styles={customStyles}
+              />
+            </FormGroup>
+            <FormGroup>
+              <label>Upstream ID</label>
+              <Select
+                options={upstreamOptions}
+                value={upstreamOptions.find(o => o.value === stepData.upstreamId)}
+                onChange={handleUpstreamChange}
+                styles={customStyles}
+              />
+            </FormGroup>
+          </>
+        ) : (
+          <FormGroup>
+            <label>Operand</label>
+            <SelectStyled name="operand" value={stepData.operand} onChange={handleChange}>
+              <option value="">Select Operand</option>
+              <option value="+">+</option>
+              <option value="-">-</option>
+              <option value="*">*</option>
+              <option value="/">/</option>
+              <option value="=">=</option>
+            </SelectStyled>
+          </FormGroup>
+        )}
+        <GradientButton onClick={handleSubmit}>
+          {editingStep ? 'Update Step' : 'Add Step'}
+        </GradientButton>
+      </ModalBox>
+    </Backdrop>
+  );
+}
+
+// Main PricingScreen Component
+function PricingScreen() {
+  const { productId } = useParams();
+  const [productName, setProductName] = useState('');
+  const [coverages, setCoverages] = useState([]);
+  const [steps, setSteps] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingStep, setEditingStep] = useState(null);
+
+  // Fetch product, coverages, and steps from Firestore
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -228,6 +452,7 @@ function PricingScreen() {
 
         const stepsSnapshot = await getDocs(collection(db, `products/${productId}/steps`));
         const stepList = stepsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        stepList.sort((a, b) => a.order - b.order);
         setSteps(stepList);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -237,67 +462,64 @@ function PricingScreen() {
     fetchData();
   }, [productId]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewStep(prev => ({ ...prev, [name]: value }));
-  };
+  // Calculate the pricing based on steps
+  const calculatePricing = () => {
+    let result = null;
+    let currentOperand = null;
 
-  const handleAddStep = async () => {
-    try {
-      let stepData;
-      if (newStep.stepType === 'factor') {
-        if (!newStep.stepName || !newStep.coverage) {
-          alert('Please fill in required fields');
-          return;
+    steps.forEach((step, index) => {
+      if (step.stepType === 'factor') {
+        const value = step.value || 0;
+        if (result === null) {
+          result = value;
+        } else if (currentOperand) {
+          if (currentOperand === '+') result += value;
+          else if (currentOperand === '-') result -= value;
+          else if (currentOperand === '*') result *= value;
+          else if (currentOperand === '/') result = value !== 0 ? result / value : result;
         }
-        stepData = {
-          stepType: 'factor',
-          coverage: newStep.coverage,
-          stepName: newStep.stepName,
-          type: newStep.type,
-          table: newStep.table,
-          rounding: newStep.rounding,
-          rules: newStep.rules,
-          states: newStep.states,
-          upstreamId: newStep.upstreamId,
-          order: steps.length
-        };
-      } else {
-        if (!newStep.operand) {
-          alert('Please select an operand');
-          return;
-        }
-        stepData = {
-          stepType: 'operand',
-          operand: newStep.operand,
-          order: steps.length
-        };
+      } else if (step.stepType === 'operand') {
+        currentOperand = step.operand;
       }
-      const docRef = await addDoc(collection(db, `products/${productId}/steps`), stepData);
-      setSteps([...steps, { ...stepData, id: docRef.id }]);
-      setNewStep({
-        stepType: 'factor',
-        coverage: 'Base Coverage',
-        stepName: '',
-        type: 'User Input',
-        table: '',
-        rounding: 'none',
-        rules: '',
-        states: [],
-        upstreamId: '',
-        operand: ''
-      });
-    } catch (error) {
-      console.error("Error adding step:", error);
-      alert("Failed to add step. Please try again.");
-    }
+    });
+
+    return result !== null ? result.toFixed(2) : 'N/A';
   };
 
+  // Handle adding or updating a step
+  const handleModalSubmit = async (stepData) => {
+    if (editingStep) {
+      try {
+        await updateDoc(doc(db, `products/${productId}/steps`, editingStep.id), stepData);
+        const updatedSteps = steps.map(s => s.id === editingStep.id ? { ...s, ...stepData } : s);
+        updatedSteps.sort((a, b) => a.order - b.order);
+        setSteps(updatedSteps);
+      } catch (error) {
+        console.error("Error updating step:", error);
+        alert("Failed to update step. Please try again.");
+      }
+    } else {
+      try {
+        const docRef = await addDoc(collection(db, `products/${productId}/steps`), { ...stepData, order: steps.length });
+        const updatedSteps = [...steps, { ...stepData, id: docRef.id, order: steps.length }];
+        updatedSteps.sort((a, b) => a.order - b.order);
+        setSteps(updatedSteps);
+      } catch (error) {
+        console.error("Error adding step:", error);
+        alert("Failed to add step. Please try again.");
+      }
+    }
+    setModalOpen(false);
+  };
+
+  // Handle deleting a step
   const handleDeleteStep = async (stepId) => {
     if (window.confirm("Are you sure you want to delete this step?")) {
       try {
         await deleteDoc(doc(db, `products/${productId}/steps`, stepId));
-        setSteps(steps.filter(step => step.id !== stepId));
+        const updatedSteps = steps.filter(step => step.id !== stepId);
+        updatedSteps.sort((a, b) => a.order - b.order);
+        setSteps(updatedSteps);
       } catch (error) {
         console.error("Error deleting step:", error);
         alert("Failed to delete step. Please try again.");
@@ -305,216 +527,108 @@ function PricingScreen() {
     }
   };
 
-  const isStepMatchingFilters = (step) => {
-    if (step.stepType === 'operand') return true;
-    const coverageMatch = selectedCoveragesFilter.length === 0 || selectedCoveragesFilter.some(c => c.value === step.coverage);
-    const statesMatch = selectedStatesFilter.length === 0 || (step.states && selectedStatesFilter.some(s => step.states.includes(s.value)));
-    return coverageMatch && statesMatch;
+  // Open modals for adding or editing steps
+  const openAddModal = () => {
+    setEditingStep(null);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (step) => {
+    setEditingStep(step);
+    setModalOpen(true);
+  };
+
+  // Render the calculation preview as a table
+  const renderCalculationPreview = () => {
+    return (
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeader>Step Name</TableHeader>
+            <TableHeader>Type</TableHeader>
+            <TableHeader>Table</TableHeader>
+            <TableHeader>Rounding</TableHeader>
+            <TableHeader>States</TableHeader>
+            <TableHeader>Upstream ID</TableHeader>
+            <TableHeader>Value</TableHeader>
+            <TableHeader>Coverage</TableHeader>
+            <TableHeader>Actions</TableHeader>
+          </TableRow>
+        </TableHead>
+        <tbody>
+          {steps.map((step, index) => (
+            step.stepType === 'factor' ? (
+              <TableRow key={step.id}>
+                <TableCell>{step.stepName}</TableCell>
+                <TableCell>{step.type}</TableCell>
+                <TableCell>{step.table ? <TableLink to={`/table/${productId}/${step.id}`}>{step.table}</TableLink> : '-'}</TableCell>
+                <TableCell>{step.rounding}</TableCell>
+                <TableCell>{step.states && step.states.length > 0 ? step.states.join(', ') : 'All'}</TableCell>
+                <TableCell>{step.upstreamId || '-'}</TableCell>
+                <TableCell>{step.value || 0}</TableCell>
+                <TableCell>{step.coverage}</TableCell>
+                <TableCell>
+                  <ActionsContainer>
+                    <IconButton onClick={() => openEditModal(step)} title="Edit step">
+                      <PencilIcon />
+                    </IconButton>
+                    <IconButton danger onClick={() => handleDeleteStep(step.id)} title="Delete step">
+                      <TrashIcon />
+                    </IconButton>
+                  </ActionsContainer>
+                </TableCell>
+              </TableRow>
+            ) : (
+              <OperandRow key={step.id}>
+                <TableCell colSpan="8">
+                  <OperandCell>{step.operand}</OperandCell>
+                </TableCell>
+                <TableCell>
+                  <ActionsContainer>
+                    <IconButton onClick={() => openEditModal(step)} title="Edit step">
+                      <PencilIcon />
+                    </IconButton>
+                    <IconButton danger onClick={() => handleDeleteStep(step.id)} title="Delete step">
+                      <TrashIcon />
+                    </IconButton>
+                  </ActionsContainer>
+                </TableCell>
+              </OperandRow>
+            )
+          ))}
+        </tbody>
+      </Table>
+    );
   };
 
   return (
     <PricingContainer>
-      <Header>
-        <Title>Pricing for {productName}</Title>
-        <BackLink to="/">Back</BackLink>
-      </Header>
-      <FilterContainer>
-        <FilterItem>
-          <FilterLabel>Filter by Coverages</FilterLabel>
-          <Select
-            isMulti
-            options={coverageOptions}
-            value={selectedCoveragesFilter}
-            onChange={setSelectedCoveragesFilter}
-            styles={{
-              control: (base) => ({
-                ...base,
-                background: '#ffffff',
-                borderColor: '#E5E7EB',
-                borderRadius: '8px',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '16px',
-                color: '#1F2937',
-                ':hover': { borderColor: '#D1D5DB' },
-                ':focus': { borderColor: '#1D4ED8', boxShadow: '0 0 0 2px rgba(29, 78, 216, 0.1)' }
-              }),
-              menu: (base) => ({ ...base, background: '#ffffff', borderRadius: '8px' }),
-              multiValue: (base) => ({ ...base, background: '#E5E7EB' }),
-              multiValueLabel: (base) => ({ ...base, color: '#1F2937' }),
-              multiValueRemove: (base) => ({
-                ...base,
-                color: '#6B7280',
-                ':hover': { background: '#D1D5DB', color: '#1F2937' }
-              }),
-              option: (base, state) => ({
-                ...base,
-                background: state.isFocused ? '#F9FAFB' : '#ffffff',
-                color: '#1F2937',
-                ':hover': { background: '#F9FAFB' }
-              }),
-              placeholder: (base) => ({ ...base, color: '#6B7280' }),
-              singleValue: (base) => ({ ...base, color: '#1F2937' })
-            }}
-          />
-        </FilterItem>
-        <FilterItem>
-          <FilterLabel>Filter by States</FilterLabel>
-          <Select
-            isMulti
-            options={stateOptions}
-            value={selectedStatesFilter}
-            onChange={setSelectedStatesFilter}
-            styles={{
-              control: (base) => ({
-                ...base,
-                background: '#ffffff',
-                borderColor: '#E5E7EB',
-                borderRadius: '8px',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '16px',
-                color: '#1F2937',
-                ':hover': { borderColor: '#D1D5DB' },
-                ':focus': { borderColor: '#1D4ED8', boxShadow: '0 0 0 2px rgba(29, 78, 216, 0.1)' }
-              }),
-              menu: (base) => ({ ...base, background: '#ffffff', borderRadius: '8px' }),
-              multiValue: (base) => ({ ...base, background: '#E5E7EB' }),
-              multiValueLabel: (base) => ({ ...base, color: '#1F2937' }),
-              multiValueRemove: (base) => ({
-                ...base,
-                color: '#6B7280',
-                ':hover': { background: '#D1D5DB', color: '#1F2937' }
-              }),
-              option: (base, state) => ({
-                ...base,
-                background: state.isFocused ? '#F9FAFB' : '#ffffff',
-                color: '#1F2937',
-                ':hover': { background: '#F9FAFB' }
-              }),
-              placeholder: (base) => ({ ...base, color: '#6B7280' }),
-              singleValue: (base) => ({ ...base, color: '#1F2937' })
-            }}
-          />
-        </FilterItem>
-      </FilterContainer>
-      <TableContainer>
-        <Table>
-          <Thead>
-            <tr>
-              <Th>Coverages</Th>
-              <Th>Step</Th>
-              <Th>Type</Th>
-              <Th>Table</Th>
-              <Th>Rounding</Th>
-              <Th>Rules</Th>
-              <Th>States</Th>
-              <Th>Upstream ID</Th>
-              <Th>Delete</Th>
-            </tr>
-          </Thead>
-          <tbody>
-            {steps.map((step) => {
-              const isMatching = isStepMatchingFilters(step);
-              return (
-                <tr key={step.id} style={{ opacity: isMatching ? 1 : 0.5 }}>
-                  <Td>{step.stepType === 'factor' ? step.coverage : ''}</Td>
-                  <Td>{step.stepType === 'factor' ? step.stepName : step.operand}</Td>
-                  <Td>{step.stepType === 'factor' ? step.type : ''}</Td>
-                  <Td>
-                    {step.stepType === 'factor' && step.table ? (
-                      <ViewLink to={`/table/${productId}/${step.id}`}>View</ViewLink>
-                    ) : step.stepType === 'factor' ? 'N/A' : ''}
-                  </Td>
-                  <Td>{step.stepType === 'factor' ? step.rounding : ''}</Td>
-                  <Td>{step.stepType === 'factor' ? <DisabledButton disabled>Rules</DisabledButton> : ''}</Td>
-                  <Td>{step.stepType === 'factor' ? (step.states ? step.states.join(', ') : '') : ''}</Td>
-                  <Td>{step.stepType === 'factor' ? step.upstreamId : ''}</Td>
-                  <Td>
-                    <DeleteButton onClick={() => handleDeleteStep(step.id)} title="Delete step">
-                      <TrashIcon />
-                    </DeleteButton>
-                  </Td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      </TableContainer>
-      <FormContainer>
-        <SelectStyled name="stepType" value={newStep.stepType} onChange={handleInputChange}>
-          <option value="factor">Factor</option>
-          <option value="operand">Operand</option>
-        </SelectStyled>
-        {newStep.stepType === 'factor' ? (
-          <>
-            <SelectStyled name="coverage" value={newStep.coverage} onChange={handleInputChange}>
-              {coverages.map(c => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
-            </SelectStyled>
-            <Input name="stepName" value={newStep.stepName} onChange={handleInputChange} placeholder="Step Name" />
-            <SelectStyled name="type" value={newStep.type} onChange={handleInputChange}>
-              <option value="User Input">User Input</option>
-              <option value="Table">Table</option>
-              <option value="Other">Other</option>
-            </SelectStyled>
-            <Input name="table" value={newStep.table} onChange={handleInputChange} placeholder="Table Name (Optional)" />
-            <SelectStyled name="rounding" value={newStep.rounding} onChange={handleInputChange}>
-              <option value="none">None</option>
-              <option value="Whole Number">Whole Number</option>
-              <option value="1 Decimal">1 Decimal</option>
-              <option value="2 Decimals">2 Decimals</option>
-              <option value="Other">Other</option>
-            </SelectStyled>
-            <Select
-              isMulti
-              name="states"
-              options={stateOptions}
-              value={newStep.states.map(s => ({ value: s, label: s }))}
-              onChange={(selected) => setNewStep(prev => ({ ...prev, states: selected ? selected.map(s => s.value) : [] }))}
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  background: '#ffffff',
-                  borderColor: '#E5E7EB',
-                  borderRadius: '8px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '16px',
-                  color: '#1F2937',
-                  ':hover': { borderColor: '#D1D5DB' },
-                  ':focus': { borderColor: '#1D4ED8', boxShadow: '0 0 0 2px rgba(29, 78, 216, 0.1)' }
-                }),
-                menu: (base) => ({ ...base, background: '#ffffff', borderRadius: '8px' }),
-                multiValue: (base) => ({ ...base, background: '#E5E7EB' }),
-                multiValueLabel: (base) => ({ ...base, color: '#1F2937' }),
-                multiValueRemove: (base) => ({
-                  ...base,
-                  color: '#6B7280',
-                  ':hover': { background: '#D1D5DB', color: '#1F2937' }
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  background: state.isFocused ? '#F9FAFB' : '#ffffff',
-                  color: '#1F2937',
-                  ':hover': { background: '#F9FAFB' }
-                }),
-                placeholder: (base) => ({ ...base, color: '#6B7280' }),
-                singleValue: (base) => ({ ...base, color: '#1F2937' })
-              }}
-            />
-            <Input name="upstreamId" value={newStep.upstreamId} onChange={handleInputChange} placeholder="Upstream ID" />
-          </>
-        ) : (
-          <SelectStyled name="operand" value={newStep.operand} onChange={handleInputChange}>
-            <option value="">Select Operand</option>
-            <option value="+">+</option>
-            <option value="-">-</option>
-            <option value="*">*</option>
-            <option value="/">/</option>
-            <option value="=">=</option>
-          </SelectStyled>
-        )}
-        <ActionButton onClick={handleAddStep}>Add Step</ActionButton>
-      </FormContainer>
+      <ContentWrapper>
+        <Header>
+          <Title>Pricing for {productName}</Title>
+          <BackLink to="/">Back</BackLink>
+        </Header>
+        <CalculationPreview>
+          {steps.length > 0 ? (
+            <>
+              {renderCalculationPreview()}
+              <StepLabel style={{ margin: '16px 0 0 0' }}>= ${calculatePricing()}</StepLabel>
+            </>
+          ) : (
+            <p>No steps added yet</p>
+          )}
+        </CalculationPreview>
+        <GradientButton onClick={openAddModal}>Add Step</GradientButton>
+      </ContentWrapper>
+      {modalOpen && (
+        <StepModal
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleModalSubmit}
+          editingStep={editingStep}
+          steps={steps}
+          coverages={coverages}
+        />
+      )}
     </PricingContainer>
   );
 }
